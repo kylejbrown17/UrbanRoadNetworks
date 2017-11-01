@@ -287,7 +287,7 @@ function Dubbins(pt₁,pt₂,θ₁,θ₂; Δs = 0.5)
 
     A = (p₃-p₂)'*[cos(θ₁);sin(θ₁)]
     C = A / sin(θ₂-θ₁)
-    X = R(θ₁)*[0;C] + p₂  # <==== Center point
+    X = Rot(θ₁)*[0;C] + p₂  # <==== Center point
     Δ₁ = p₂ - X
     Δ₂ = p₃ - X
     r = norm(Δ₁)
@@ -373,7 +373,7 @@ function ExtendedDubbins(pt₀,pt₁,pt₂,pt₃; θ₁=nothing, θ₂=nothing, 
 
     A = (p₃-p₂)'*[cos(θ₁);sin(θ₁)]
     C = A / sin(θ₂-θ₁)
-    X = R(θ₁)*[0;C] + p₂  # <==== Center point
+    X = Rot(θ₁)*[0;C] + p₂  # <==== Center point
     Δ₁ = p₂ - X
     Δ₂ = p₃ - X
     r = norm(Δ₁)
@@ -430,11 +430,11 @@ function SplineFromEndPoints(pt₁, pt₂, θ₁, θ₂; numPts=100, degree=3, r
     at pt2 with heading θ₂
     """
     d = norm(pt₁-pt₂)
-    V₁ = (d/4) * R(θ₁) * [
+    V₁ = (d/4) * Rot(θ₁) * [
         0.0 1.0;
         0.0 0.0
     ] .+ pt₁
-    V₂ = (d/4) * R(θ₂+π) * [
+    V₂ = (d/4) * Rot(θ₂+π) * [
         1.0 0.0;
         0.0 0.0
     ] .+ pt₂
