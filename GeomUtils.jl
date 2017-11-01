@@ -1,8 +1,9 @@
 module GeomUtils
 
 export
-    R
+    Rot,
+    unitVec
 
-R(θ) = [cos(θ) -sin(θ); sin(θ) cos(θ)]
-
+Rot(θ) = [cos(θ) -sin(θ); sin(θ) cos(θ)]
+unitVec(θ) = [cos(θ);sin(θ)]
 end # module

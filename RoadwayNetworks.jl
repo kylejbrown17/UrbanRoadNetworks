@@ -11,7 +11,14 @@ export
     Intersection,
     UrbanMap,
     id_dispenser,
-    getId!
+    getId!,
+    Left,
+    Right,
+    Opposite
+
+Left = Dict(:North => :West, :East => :North, :South => :East, :West => :South)
+Right = Dict(:North => :East, :East => :South, :South => :West, :West => :North)
+Opposite = Dict(:North => :South, :East => :West, :South => :North, :West => :East)
 
 type Curve
     x
@@ -58,12 +65,13 @@ type Road
     referenceLine
     lanes
     successors # other roads
-    predecessors # other lanes
+    predecessors # other roads
     speed
     function Road(id;curve=nothing,speed=nothing)
         road = new()
         road.id = id
         road.referenceLine = curve
+        road.lanes = Set()
         road.successors = nothing
         road.predecessors = nothing
         road.speed = speed
@@ -83,6 +91,7 @@ type Lane
     successors # laneID
     neighborsLeft # laneID
     neighborsRight # laneID
+    signal_state # :Green, :Yellow or :Red
     function Lane(lane_id,x,y,s,θ,k;width=nothing,road_id=nothing)
         lane = new()
         lane.id = lane_id
@@ -92,13 +101,33 @@ type Lane
         lane.width = width
         lane.boundaryLeft = nothing
         lane.boundaryRight = nothing
-        lane.predecessors = nothing
-        lane.successors = nothing
-        lane.neighborsLeft = nothing
-        lane.neighborsRight = nothing
+        lane.predecessors = Set()
+        lane.successors = Set()
+        lane.neighborsLeft = Set()
+        lane.neighborsRight = Set()
+        lane.signal_state = :Green
         return lane
     end
 end
+
+# type TrafficSignal
+#     states # ordered list of traffic states through which the signal passes
+#     current_state
+#     timing # list of times corresponding to each state change
+#     t # time since last change
+#     function TrafficSignal(intersection::Intersection)
+#         signal = new()
+#         signal.states = []
+#         # for dir in [:North, :East, :South, :West]
+#         #     for i,k in enumerate(sort([k for (k, v) in intersection.entrances[dir]]))
+#         #
+#         #     end
+#         # end
+#         timing = []
+#         t = 0
+#         return signal
+#     end
+# end
 
 type Intersection
     id
@@ -114,7 +143,10 @@ type Intersection
     entrances # Dict(:North, :East, :South, :West) => Dict(-1, 0, 1, ..., offset) => [ID(s)] of associated lanes
     exits # Dict(:North, :East, :South, :West) => Dict(-1, 0, 1, ..., offset) => [ID(s)] of associated lanes
     refpoints # Dict(:North, :East, :South, :West) => Dict(:in,:out) => [x;y]
+    entrance_pts
+    exit_pts
     lanes # Dict(id) => Lane
+    roads
     function Intersection(id,x,y,θ₁,θ₂;LanesIn=nothing)
         retval = new()
         retval.id = id
@@ -125,30 +157,13 @@ type Intersection
         retval.connections_in = Dict( k => -1 for k in [:North, :East, :South, :West])
         retval.LanesIn = LanesIn
         retval.LanesOut = nothing
-        retval.entrances = Dict(
-            :North => Dict(),
-            :South => Dict(),
-            :East => Dict(),
-            :West => Dict()
-        )
-        retval.exits = Dict(
-            :North => Dict(),
-            :South => Dict(),
-            :East => Dict(),
-            :West => Dict()
-        )
-        retval.refpoints = Dict(
-            :North => Dict(),
-            :South => Dict(),
-            :East => Dict(),
-            :West => Dict()
-        )
-        retval.lanes = Dict(
-            :North => Dict(),
-            :South => Dict(),
-            :East => Dict(),
-            :West => Dict()
-        )
+        retval.entrances = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
+        retval.exits = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
+        retval.entrance_pts = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
+        retval.exit_pts = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
+        retval.refpoints = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
+        retval.lanes = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
+        retval.roads = Dict(:North => Dict(), :South => Dict(), :East => Dict(), :West => Dict())
         return retval
     end
 end
@@ -189,5 +204,13 @@ type UrbanMap
         return urbanMap
     end
 end
+
+function getId!(urbanMap::UrbanMap)
+    """
+    returns a single id from an id_dispenser object
+    """
+    return pop!(urbanMap.dispenser.available_ids)
+end
+
 
 end # module

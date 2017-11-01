@@ -11,7 +11,8 @@ export
     ComputeFrenetCoordsFromCartesian,
     Dubbins,
     SplineFromEndPoints,
-    ExtendedDubbins
+    ExtendedDubbins,
+    TransitionSpline
 
 """
 Computes the coefficients of a B-spline of degree "degree" from the control points "Pts", and
@@ -146,7 +147,8 @@ function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples)
                 scale = (sP[j] - s[t-1]) / (s[t] - s[t-1])
                 xP[j] = rx[t-1] + scale * (rx[t] - rx[t-1])
                 yP[j] = ry[t-1] + scale * (ry[t] - ry[t-1])
-                θP[j] = θ[t-1] + scale * (θ[t] - θ[t-1])
+                # θP[j] = θ[t-1] + scale * ((θ[t] - θ[t-1]))
+                θP[j] = θ[t-1] + scale * ((θ[t] - θ[t-1])*(abs(θ[t]-θ[t-1]) < π) + (-2π+abs(θ[t]-θ[t-1]))*(abs(θ[t]-θ[t-1]) > π))
                 kP[j] = k[t-1] + scale * (k[t] - k[t-1])
                 # ttP[j] = (t - 1 + scale) / length(s)
                 break
@@ -155,6 +157,21 @@ function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples)
     end
 
     return sP, xP, yP, θP, kP
+end
+
+function TransitionSpline(npts;y₁=0,y₂=0,L=1,B=0.5)
+    """
+    generates a spline that smoothly transitions between y₁ and y₂
+    """
+    B = min(B, 0.5)
+    ctrl_pts = [
+        0.0 B*L (1-B)*L 1*L;
+        y₁ y₁ y₂ y₂
+    ]
+    spline = Bspline(ctrl_pts, 3, npts;resample=false)
+    _,_,y,_,_ = ResampleSplineByArcLength(spline.s, spline.x, spline.y,
+    spline.θ, spline.k, npts)
+    return y
 end
 
 """
@@ -321,14 +338,18 @@ function Dubbins(pt₁,pt₂,θ₁,θ₂; Δs = 0.5)
     return x,y
 end
 
-function ExtendedDubbins(pt₀,pt₁,pt₂,pt₃; Δs = 0.5)
+function ExtendedDubbins(pt₀,pt₁,pt₂,pt₃; θ₁=nothing, θ₂=nothing, Δs = 0.5)
     """
     returns evenly sampled curve from from pt₀ -> pt₁ -> pt₂ -> pt₃,
     sampled at intervals of Δŝ ≋ Δs. The section from pt₁ -> pt₂ is a
     Dubbins curve as defined in the Dubbins() function
     """
-    θ₁ = atan2((pt₁-pt₀)[2],(pt₁-pt₀)[1])
-    θ₂ = atan2((pt₃-pt₂)[2],(pt₃-pt₂)[1])
+    if θ₁ == nothing
+        θ₁ = atan2((pt₁-pt₀)[2],(pt₁-pt₀)[1])
+    end
+    if θ₂ == nothing
+        θ₂ = atan2((pt₃-pt₂)[2],(pt₃-pt₂)[1])
+    end
     Δθ = θ₂ - θ₁
     vecA = [cos(θ₁);sin(θ₁)]*(pt₂-pt₁)'*[cos(θ₁);sin(θ₁)]
     vecB = (pt₂-pt₁) - vecA
