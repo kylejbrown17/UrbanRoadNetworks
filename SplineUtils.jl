@@ -122,8 +122,10 @@ end
 """
 Evenly resamples spline at num_samples points along arc_length
 """
-function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples)
-    sP = collect(linspace(0,s[end],num_samples))
+function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples; sP=nothing)
+    if sP==nothing
+    	sP = collect(linspace(0,s[end],num_samples))
+    end
     xP = zeros(num_samples)
     yP = zeros(num_samples)
     θP = zeros(num_samples)
