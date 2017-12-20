@@ -33,7 +33,7 @@ function urbanDemo1()
     id = getId!(urbanMap.dispenser); x = 180; y = 160; θ₁ = -π/6; θ₂ = θ₁+π/2;
     I4 = Intersection(id,x,y,θ₁,θ₂; LanesIn=LanesIn4); urbanMap.intersections[id] = I4;
 
-    populateIntersection!(I1, urbanMap; LanesIn=LanesIn1, width=2.5, buffer=5)
+    populateIntersection!(I1, urbanMap; LanesIn=LanesIn1, width=2.5, buffer=5);
     populateIntersection!(I2, urbanMap; LanesIn=LanesIn2, width=2.5, buffer=6);
     populateIntersection!(I3, urbanMap; LanesIn=LanesIn3, width=2.5, buffer=6);
     populateIntersection!(I4, urbanMap; LanesIn=LanesIn4, width=2.5, buffer=6);
@@ -43,8 +43,8 @@ function urbanDemo1()
     GenerateDoubleRoadBetweenIntersections!(urbanMap, I2, I4, :North, :South);
     GenerateDoubleRoadBetweenIntersections!(urbanMap, I2, I4, :East, :East);
     GenerateDoubleRoadBetweenIntersections!(urbanMap, I1, I3, :North, :South);
-    GenerateDoubleRoadBetweenIntersections!(urbanMap, I1, I3, :West, :West);
     GenerateDoubleRoadBetweenIntersections!(urbanMap, I3, I4, :East, :West);
+    GenerateDoubleRoadBetweenIntersections!(urbanMap, I1, I3, :West, :West);
     GenerateDoubleRoadBetweenIntersections!(urbanMap, I3, I4, :North, :North);
 
     return urbanMap
