@@ -14,15 +14,15 @@ export
     ExtendedDubbins,
     TransitionSpline
 
-"""
-Computes the coefficients of a B-spline of degree "degree" from the control points "Pts", and
-samples "L_tt" points from that spline
-"""
 function B_Spline(Pts, degree, L_tt) # returns spline and derivative of spline
+    """
+    Computes the coefficients of a B-spline of degree "degree" from the control points "Pts", and
+    samples "L_tt" points from that spline
+    """
     k = degree
     p = k - 1 # degree of derivative
     n = size(Pts,2) # number of control points
-    m = n + k + 1; # number of knots in T
+    m = Int(n + k + 1); # number of knots in T
 
     #knots
     T = 0.5*ones(m,1)
@@ -65,13 +65,14 @@ function B_Spline(Pts, degree, L_tt) # returns spline and derivative of spline
 end
 
 #####################################################
-"""
-Computes the derivative of a spline
-"""
-function B_SplineDerivative(T, # knots
-    tt, # sample locations t ∈ [0,1.0]
-    Pts, # control points
-    k) # degree of spline
+function B_SplineDerivative(T,tt,Pts,k)
+    """
+    Computes the derivative of a spline
+        T : knots
+        tt : sample locations t ∈ [0,1.0]
+        Pts : control points
+        k : degree of spline
+    """
 
     p = k - 1 # degree of derivative
     n = size(Pts,2) # number of control points
@@ -119,12 +120,14 @@ function B_SplineDerivative(T, # knots
 end
 
 #################################################
-"""
-Evenly resamples spline at num_samples points along arc_length
-"""
-function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples; sP=nothing)
+function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples,sP=nothing)
+    """
+    Evenly resamples spline at num_samples points along arc_length
+    """
     if sP==nothing
     	sP = collect(linspace(0,s[end],num_samples))
+    else
+        num_samples = length(sP)
     end
     xP = zeros(num_samples)
     yP = zeros(num_samples)
@@ -161,7 +164,7 @@ function ResampleSplineByArcLength(s,rx,ry,θ,k,num_samples; sP=nothing)
     return sP, xP, yP, θP, kP
 end
 
-function TransitionSpline(npts;y₁=0,y₂=0,L=1,B=0.5)
+function TransitionSpline(npts,y₁=0,y₂=0,L=1,B=0.5)
     """
     generates a spline that smoothly transitions between y₁ and y₂
     """
@@ -170,16 +173,16 @@ function TransitionSpline(npts;y₁=0,y₂=0,L=1,B=0.5)
         0.0 B*L (1-B)*L 1*L;
         y₁ y₁ y₂ y₂
     ]
-    spline = Bspline(ctrl_pts, 3, npts;resample=false)
+    spline = Bspline(ctrl_pts, 3, npts)
     _,_,y,_,_ = ResampleSplineByArcLength(spline.s, spline.x, spline.y,
     spline.θ, spline.k, npts)
     return y
 end
 
-"""
-Bspline type
-"""
 type Bspline
+    """
+    Bspline type
+    """
     knots
     controlPts
     degree
@@ -189,7 +192,7 @@ type Bspline
     θ
     s
     k
-    function Bspline(controlPts, degree, numPts; resample=true, Δs=1.0)
+    function Bspline(controlPts, degree=3, numPts=100, Δs=1.0, resample=true)
         spline = new()
         spline.controlPts = controlPts
         spline.degree = degree
@@ -221,14 +224,14 @@ type Bspline
         spline.k = k
 
         if resample == true
-            ResampleByArcLength!(spline; Δs=Δs)
+            ResampleByArcLength!(spline, Δs)
         end
 
         return spline
     end
 end
 
-function ComputeFrenetCoordsFromCartesian(x,y;θ₁=nothing,θ₂=nothing)
+function ComputeFrenetCoordsFromCartesian(x,y,θ₁=nothing,θ₂=nothing)
     Δx = diff(x)
     Δy = diff(y)
     s = vcat([0], cumsum(sqrt.(Δx.^2 + Δy.^2)))
@@ -253,15 +256,15 @@ function ComputeFrenetCoordsFromCartesian(x,y;θ₁=nothing,θ₂=nothing)
     return s, θ, k
 end
 
-"""
-ResampleByArcLength!()
-resamples points of spline at approximate fixed arc length intervals defined by
-Δs
-"""
-function ResampleByArcLength!(spline; Δs=0.5)
+function ResampleByArcLength!(spline, Δs=0.5)
+    """
+    ResampleByArcLength!()
+    resamples points of spline at approximate fixed arc length intervals defined by
+    Δs
+    """
     num_samples = Int(div(spline.s[end], Δs))
     spline.s,spline.x,spline.y,spline.θ,spline.k = ResampleSplineByArcLength(
-        spline.s,spline.x,spline.y,spline.θ,spline.k, Int(div(spline.s[end],Δs)))
+        spline.s,spline.x,spline.y,spline.θ,spline.k, num_samples)
 end
 
 function Dubbins(pt₁,pt₂,θ₁,θ₂; Δs = 0.5)
@@ -426,22 +429,36 @@ function ExtendedDubbins(pt₀,pt₁,pt₂,pt₃; θ₁=nothing, θ₂=nothing, 
     return x,y
 end
 
-function SplineFromEndPoints(pt₁, pt₂, θ₁, θ₂; numPts=100, degree=3, resample=true, Δs=0.5)
+function SplineFromEndPoints(pt₁, pt₂, θ₁, θ₂, numPts=100, degree=3, Δs=0.5, resample=true)
     """
     generates a spline that leaves pt1 at heading θ₁, and arrives
     at pt2 with heading θ₂
     """
-    d = norm(pt₁-pt₂)
-    V₁ = (d/4) * Rot(θ₁) * [
-        0.0 1.0;
-        0.0 0.0
-    ] .+ pt₁
-    V₂ = (d/4) * Rot(θ₂+π) * [
-        1.0 0.0;
-        0.0 0.0
-    ] .+ pt₂
-    Pts = hcat(V₁,(V₁[:,end]+V₂[:,1])/2,V₂)
-    spline = Bspline(Pts, degree, numPts; resample=resample, Δs=Δs)
+    Vc = pt₂-pt₁
+    dmin = .25*norm(Vc)
+    dmax = .35*norm(Vc)
+    m1 = cross([cos(θ₁);sin(θ₁);0],[Vc;0])[end]
+    m2 = cross([cos(θ₂);sin(θ₂);0],[Vc;0])[end]
+    if sign(m1) == sign(m2)
+        # zigzag
+        r1 = norm(Vc)/4
+        r2 = norm(Vc)/4
+    else
+        # θ₁ as reference
+        Δθ = θ₂-θ₁
+        Va = dot([cos(θ₁);sin(θ₁)],Vc)*[cos(θ₁);sin(θ₁)]
+        Vb = Vc - Va
+        r1 = norm(Va) - cross([Va;0],[Vb;0])[end]/norm(Va)*cot(Δθ)
+        Vd = r1*Va/norm(Va)
+        r2 = norm(Vc-Vd)
+        r1 = max(dmin,min(dmax,r1))
+        r2 = max(dmin,min(dmax,r2))
+    end
+    pts = [
+        pt₁[1] pt₁[1]+r1*cos(θ₁) pt₂[1]-r2*cos(θ₂) pt₂[1];
+        pt₁[2] pt₁[2]+r1*sin(θ₁) pt₂[2]-r2*sin(θ₂) pt₂[2]
+    ]
+    spline = Bspline(pts, degree, numPts, Δs, resample)
     return spline
 end
 
