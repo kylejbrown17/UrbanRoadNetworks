@@ -258,9 +258,9 @@ function populateIntersection!(intersection,urbanMap;LanesIn=nothing,width=1,buf
     end
 
     Directions = [:North, :East, :South, :West]
-#     for k in Directions
-#         road = Road(getId!(urbanMap))
-#     end
+    # for k in Directions
+    #     road = Road(getId!(urbanMap))
+    # end
 
     θ = intersection.θ
     # account for shearing when Δθ is not exactly 90 degrees
@@ -332,8 +332,8 @@ function populateIntersection!(intersection,urbanMap;LanesIn=nothing,width=1,buf
                 pt₁ = CurveStartPoints[direction][i]
                 pt₂ = CurveEndPoints[direction][i]
                 pt₃ = ExitPoints[direction][i]
-#                 x = collect(linspace(pt₁[1],pt₂[1]))
-#                 y = collect(linspace(pt₁[2],pt₂[2]))
+                # x = collect(linspace(pt₁[1],pt₂[1]))
+                # y = collect(linspace(pt₁[2],pt₂[2]))
                 x = collect(linspace(pt₀[1],pt₃[1]))
                 y = collect(linspace(pt₀[2],pt₃[2]))
                 sₗ,θₗ,kₗ = ComputeFrenetCoordsFromCartesian(x,y;θ₁=θ[direction],θ₂=θ[direction])
@@ -359,7 +359,7 @@ function populateIntersection!(intersection,urbanMap;LanesIn=nothing,width=1,buf
                 pt₁ = CurveStartPoints[direction][i]
                 pt₂ = CurveEndPoints[Right[direction]][i]
                 pt₃ = ExitPoints[Right[direction]][i]
-#                 x,y = Dubbins(pt₁,pt₂,θ[direction],θ[Right[direction]])
+                # x,y = Dubbins(pt₁,pt₂,θ[direction],θ[Right[direction]])
                 x,y = ExtendedDubbins(pt₀,pt₁,pt₂,pt₃;θ₁=θ[direction],θ₂=θ[Right[direction]])
                 sₗ,θₗ,kₗ = ComputeFrenetCoordsFromCartesian(x,y;θ₁=θ[direction],θ₂=θ[Right[direction]])
                 id = getId!(urbanMap.dispenser)
@@ -386,7 +386,7 @@ function populateIntersection!(intersection,urbanMap;LanesIn=nothing,width=1,buf
                 pt₁ = reverse(CurveStartPoints[direction])[i]
                 pt₂ = reverse(CurveEndPoints[Left[direction]])[i]
                 pt₃ = reverse(ExitPoints[Left[direction]])[i]
-#                 x,y = Dubbins(pt₁,pt₂,θ[direction],θ[Left[direction]])
+                # x,y = Dubbins(pt₁,pt₂,θ[direction],θ[Left[direction]])
                 x,y = ExtendedDubbins(pt₀,pt₁,pt₂,pt₃;θ₁=θ[direction],θ₂=θ[Left[direction]])
                 sₗ,θₗ,kₗ = ComputeFrenetCoordsFromCartesian(x,y;θ₁=θ[direction],θ₂=θ[Left[direction]])
                 id = getId!(urbanMap.dispenser)
